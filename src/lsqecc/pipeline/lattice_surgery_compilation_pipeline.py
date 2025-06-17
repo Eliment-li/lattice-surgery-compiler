@@ -89,3 +89,26 @@ def compile_str(
         )
 
     return list(map(sparse_lattice_to_array, lsc.composer.getSlices())), compilation_text
+
+
+if __name__ == '__main__':
+    circuit = """OPENQASM 2.0;
+    include "qelib1.inc";
+   qreg q0[4];
+h q0[3];
+barrier q0[0],q0[1],q0[2],q0[3];
+crz(pi/2) q0[2],q0[3];
+h q0[2];
+barrier q0[0],q0[1],q0[2],q0[3];
+crz(pi/4) q0[1],q0[3];
+crz(pi/2) q0[1],q0[2];
+h q0[1];
+barrier q0[0],q0[1],q0[2],q0[3];
+crz(pi/8) q0[0],q0[3];
+crz(pi/4) q0[0],q0[2];
+crz(pi/2) q0[0],q0[1];
+h q0[0];
+barrier q0[0],q0[1],q0[2],q0[3];
+    """
+    result = compile_str(qasm_circuit=circuit)
+    print(result)
