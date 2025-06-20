@@ -1,5 +1,8 @@
+import re
+
 import pytest
 from qiskit import QuantumCircuit
+from sympy.solvers.ode.lie_group import lie_heuristics
 
 from lsqecc.gates.gates_circuit import GatesCircuit
 from lsqecc.ls_instructions.ls_instructions_from_gates import (
@@ -27,14 +30,8 @@ barrier q0[0],q0[1],q0[2],q0[3];
 
 TEST2 = """OPENQASM 2.0;
 include "qelib1.inc";
-qreg q[3];
-h q[0];
+qreg q[2];
 cx q[0],q[1];
-crz(pi/2) q[1],q[0];
-crz(pi/4) q[2],q[0];
-h q[1];
-crz(pi/2) q[2],q[1];
-h q[2];
 """
 
 TEST = """OPENQASM 2.0;
@@ -146,6 +143,18 @@ class TestLSInstructionsFromGatesGenerator:
         output = LSInstructionsFromGatesGenerator.text_from_gates_circuit(circuit)
         print(output)
 
+    def to_instructions(self,qasmstr=None):
+        if not qasmstr:
+            qasmstr = TEST2
+
+        clifford_plus_t = GatesCircuit.from_qasm(qasmstr).to_clifford_plus_t()
+        #print(clifford_plus_t)
+        instructions: str = LSInstructionsFromGatesGenerator.text_from_gates_circuit(
+                clifford_plus_t
+            )
+
+        #print('instructions=\n',instructions)
+        return instructions
 
 
     def test_convert_all_file(self):
@@ -157,19 +166,24 @@ class TestLSInstructionsFromGatesGenerator:
             if os.path.isfile(input_file_path):
                 with open(input_file_path, 'r') as infile:
                     lines = infile.readlines()  # Read all lines from the file
-                    print(lines)
+                    #print(lines)
                     for line in lines:
                         if line.startswith('creg') or line.startswith(r'//') or line.startswith('barrier') or line.startswith('measure'):
                             continue
+                        #  'cp' to 'crz'
                         line = line.strip().replace('cp', 'crz')+'\n'
-                        content += line
-                    # content = infile.read()
+                        line = line.strip().replace('cnot', 'cx')+'\n'
 
-                # Process the lines
-                    #replace all 'cp' to 'crz'
-                # content = content.replace('cp', 'crz')
-                print(content)
-                content = self.test_text_from_gates_circuit(qasmstr=content)
+                        #SWAP(A,B)=CNOT(A,B)→CNOT(B,A)→CNOT(A,B)
+                        if line.startswith('swap'):
+                            match1 =re.match(r'swap q\[(\d+)\],q\[(\d+)\];', line)
+                            qa = match1.group(1)
+                            qb = match1.group(2)
+                            line = f'cx q[{qa}],q[{qb}]\ncx [{qb}],[{qa}]\ncx [{qa}],[{qb}];\n'
+                        if len(line)>0:
+                            content += line
+                #print(content)
+                content = self.to_instructions(qasmstr=content)
                 # Write the processed lines to a new file in the output directory
                 output_file_path = os.path.join(output_directory, f"processed_{filename}")
                 with open(output_file_path, 'w') as outfile:

@@ -42,7 +42,10 @@ class LSInstructionsFromGatesGenerator:
             return [ls_instructions.HGate(gate.target_qubit)]
         elif isinstance(gate, gates.CNOT):
             ancilla = self.get_new_ancilla()
-            return [
+            # bug fix, the ancilla qubit should not be the same as control or target qubit
+            if ancilla == gate.control_qubit or ancilla == gate.target_qubit:
+                ancilla = self.get_new_ancilla()
+            ls_instruction= [
                 ls_instructions.Init(patch_id=ancilla, state=qs.DefaultSymbolicStates.Plus),
                 ls_instructions.MultiBodyMeasure(
                     {gate.control_qubit: PauliOperator.Z, ancilla: PauliOperator.Z}
@@ -52,6 +55,7 @@ class LSInstructionsFromGatesGenerator:
                 ),
                 ls_instructions.MeasureSinglePatch(ancilla, PauliOperator.Z),
             ]
+            return ls_instruction
         else:
             raise Exception(f"Gate {gate} is not Clifford+T")
 
