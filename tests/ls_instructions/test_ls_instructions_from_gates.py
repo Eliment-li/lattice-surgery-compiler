@@ -159,7 +159,7 @@ class TestLSInstructionsFromGatesGenerator:
 
     def test_convert_all_file(self):
         input_directory = 'd:/sync/mqtbench/ori'
-        output_directory = 'd:/sync/mqtbench/out'
+        output_directory = 'd:/sync/mqtbench/ls_inst'
         for filename in os.listdir(input_directory):
             input_file_path = os.path.join(input_directory, filename)
             content = ''
