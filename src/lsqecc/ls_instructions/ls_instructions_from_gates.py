@@ -13,14 +13,19 @@ class LSInstructionsFromGatesGenerator:
     Convert a sequence of gates to LSInstructions
     """
 
-    def __init__(self, start_ancilla_qubit_counter=0):
+    def __init__(self, start_ancilla_qubit_counter=999999):
         self.ancilla_qubit_counter = start_ancilla_qubit_counter
+        self.qubit_set = set()
 
     def get_new_ancilla(self):
         self.ancilla_qubit_counter += 1
         return self.ancilla_qubit_counter
 
     def gen_instructions(self, gate: gates.Gate) -> Sequence[ls_instructions.LSInstruction]:
+        if gate.target_qubit:
+            self.qubit_set.add(gate.target_qubit)
+        if  hasattr(gate, 'control_qubit') and gate.control_qubit:
+            self.qubit_set.add(gate.control_qubit)
         if isinstance(gate, gates.X):
             return [ls_instructions.LogicalPauli(gate.target_qubit, PauliOperator.X)]
         elif isinstance(gate, gates.Z):
@@ -43,7 +48,7 @@ class LSInstructionsFromGatesGenerator:
         elif isinstance(gate, gates.CNOT):
             ancilla = self.get_new_ancilla()
             # bug fix, the ancilla qubit should not be the same as control or target qubit
-            if ancilla == gate.control_qubit or ancilla == gate.target_qubit:
+            while ancilla in self.qubit_set:
                 ancilla = self.get_new_ancilla()
             ls_instruction= [
                 ls_instructions.Init(patch_id=ancilla, state=qs.DefaultSymbolicStates.Plus),
