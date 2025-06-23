@@ -156,7 +156,6 @@ class TestLSInstructionsFromGatesGenerator:
         #print('instructions=\n',instructions)
         return instructions
 
-
     def test_convert_all_file(self):
         input_directory = 'd:/sync/mqtbench/ori'
         output_directory = 'd:/sync/mqtbench/ls_inst'
@@ -185,7 +184,7 @@ class TestLSInstructionsFromGatesGenerator:
                 #print(content)
                 content = self.to_instructions(qasmstr=content)
                 # Write the processed lines to a new file in the output directory
-                output_file_path = os.path.join(output_directory, f"processed_{filename}")
+                output_file_path = os.path.join(output_directory, f"LSI_{filename[:-4]}lsi")
                 with open(output_file_path, 'w') as outfile:
                     outfile.writelines(content)
 
