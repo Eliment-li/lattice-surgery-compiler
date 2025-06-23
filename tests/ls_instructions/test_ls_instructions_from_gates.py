@@ -166,8 +166,11 @@ class TestLSInstructionsFromGatesGenerator:
                 with open(input_file_path, 'r') as infile:
                     lines = infile.readlines()  # Read all lines from the file
                     #print(lines)
-                    for line in lines:
-                        if line.startswith('creg') or line.startswith(r'//') or line.startswith('barrier') or line.startswith('measure'):
+                    prefixes = ('creg',r'//', 'barrier', 'measure',r'u2')
+                    for i in range(5,len( lines)):
+                        line = lines[i]
+                        #if line.startswith('creg') or line.startswith(r'//') or line.startswith('barrier') or line.startswith('measure'):
+                        if line.startswith(prefixes):
                             continue
                         #  'cp' to 'crz'
                         line = line.strip().replace('cp', 'crz')+'\n'
@@ -181,7 +184,7 @@ class TestLSInstructionsFromGatesGenerator:
                             line = f'cx q[{qa}],q[{qb}]\ncx [{qb}],[{qa}]\ncx [{qa}],[{qb}];\n'
                         if len(line)>0:
                             content += line
-                #print(content)
+                print(content)
                 content = self.to_instructions(qasmstr=content)
                 # Write the processed lines to a new file in the output directory
                 output_file_path = os.path.join(output_directory, f"LSI_{filename[:-4]}lsi")
