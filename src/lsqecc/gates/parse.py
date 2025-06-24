@@ -53,15 +53,28 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
             ret_gates.append(parse_trivial_gate(instruction, args))
         elif instruction[0:2] == "rz":
             if instruction[2:6] != "(pi/":
-                raise QasmParseException(
-                    f"Can only parse pi/n for n power of 2 angles as rz args, " f"got {instruction}"
-                )
-            phase_pi_frac_den = int(instruction[6:].split(")")[0])
-            ret_gates.append(gates.RZ(get_index_arg(args[0]), Fraction(1, phase_pi_frac_den)))
+                ##TODO check the  theta phi and  lam
+                lam = re.search(r"rz\((\d+\.\d+)\)", instruction).group(1)
+                lam = float(lam)
+                ret_gates.append(gates.U(theta = 0, phi=0,lam=lam))
+                # raise QasmParseException(
+                #     f"Can only parse pi/n for n power of 2 angles as rz args, " f"got {instruction}"
+                # )
+            else:
+                phase_pi_frac_den = int(instruction[6:].split(")")[0])
+                ret_gates.append(gates.RZ(get_index_arg(args[0]), Fraction(1, phase_pi_frac_den)))
+        #support u2 instruction
+        elif instruction.startswith("u2"):
+            phi,lam = parse_u2_instruction(instruction)
+            ret_gates.append(
+                ##TODO check the  theta phi and  lam
+                gates.U(type='u2',theta=np.pi/2, phi=phi, lam=lam, target_qubit=get_index_arg(args[0]))
+            )
+
         elif instruction[0:3] == "crz":
             if instruction[3:7] != "(pi/":
                 raise QasmParseException(
-                    f"Can only parse pi/n for n power of 2 angles as rz args, " f"got {instruction}"
+                    f"Can only parse pi/n for n power of 2 angles as rz args in crz, " f"got {instruction}"
                 )
             phase_pi_frac_den = int(instruction[7:].split(")")[0])
             ret_gates.append(
@@ -83,3 +96,33 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
             raise QasmParseException(f"Instruction {instruction} with args {args} not implemented")
 
     return ret_gates
+
+import re
+import numpy as np
+def parse_u2_instruction(instruction):
+
+    # 匹配括号中的内容
+    pattern = r'u2\(([^,]+),([^,]+)\)'
+    match = re.search(pattern, instruction)
+
+    if match:
+        # 提取括号中的两个值
+        value1 = match.group(1).strip()
+        value2 = match.group(2).strip()
+
+        # 处理可能的 'pi' 替换为 np.pi
+        if value1 == 'pi':
+            value1 = np.pi
+        else:
+            value1 = float(value1)
+
+        if value2 == 'pi':
+            value2 = np.pi
+        elif value2 == '-pi':
+            value2 = -np.pi
+        else:
+            value2 = float(value2)
+
+        return value1, value2
+    else:
+        raise ValueError("指令格式不正确")
