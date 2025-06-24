@@ -9,12 +9,81 @@ from lsqecc.gates.pi_over_2_to_the_n_rz_gate_approximations import (
 )
 from lsqecc.pauli_rotations.rotation import PauliOperator
 from lsqecc.utils import is_power_of_two
+import pennylane as qml
+
+def handle_ops(ops:list,compress_rotations:bool,target_qubit:int) -> Sequence["gates.Gate"]:
+    Tdg = 'Adjoint(T(0))'
+    approx_gates = []
+    for o in ops:
+        if isinstance(o, qml.ops.T):
+            approx_gates.append(
+                gates.PauliRotations(
+                    target_qubit=target_qubit, phase=Fraction(1, 4), axis=PauliOperator.Z
+                )
+                if compress_rotations
+                else gates.T(target_qubit)
+            )
+        elif isinstance(o, qml.ops.H):
+            approx_gates.append(gates.H(target_qubit))
+        elif isinstance(o, qml.ops.S):
+            approx_gates.append(
+                gates.PauliRotations(
+                    target_qubit=target_qubit, phase=Fraction(1, 2), axis=PauliOperator.Z
+                )
+                if compress_rotations
+                else gates.S(target_qubit)
+            )
+        elif str(o) == Tdg:
+            # T dagger = Z-S-T = hxh-s-t
+            approx_gates.append(gates.H(target_qubit))
+            approx_gates.append(gates.X(target_qubit))
+            approx_gates.append(gates.H(target_qubit))
+            # s
+            approx_gates.append(
+                gates.PauliRotations(
+                    target_qubit=target_qubit, phase=Fraction(1, 2), axis=PauliOperator.Z
+                )
+                if compress_rotations
+                else gates.S(target_qubit)
+            )  # t
+            approx_gates.append(
+                gates.PauliRotations(
+                    target_qubit=target_qubit, phase=Fraction(1, 4), axis=PauliOperator.Z
+                )
+                if compress_rotations
+                else gates.T(target_qubit)
+            )
+        elif str(o) == 'GlobalPhase(array(0.), wires=[])' or isinstance(o, qml.ops.GlobalPhase):
+            continue
+        else:
+            raise Exception(f"Cannot decompose gate: {o}")
+    return approx_gates
+
+def approximate_u_gate(u_gate:"gates.U",compress_rotations)-> Sequence["gates.Gate"]:
+    op = qml.U3(u_gate.theta,u_gate.phi,u_gate.lam, wires=0)
+    ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
+    approx_gates = handle_ops(ops, compress_rotations, u_gate.target_qubit)
+    return approx_gates
+
+# approximate the gates with  phase not in pi/2^n
+def approximate_rz_from_no_pi(rz_gate: "gates.RZ",compress_rotations)-> Sequence["gates.Gate"]:
+
+
+    #op = qml.RY(np.pi / 3, wires=0)
+    op = qml.RZ(rz_gate.phase, wires=0)
+    # Get the gate decomposition in ['T', 'T*', 'H']
+    ops = qml.ops.sk_decomposition(op,epsilon=1e-3)
+    approx_gates = handle_ops(ops,compress_rotations,rz_gate.target_qubit)
+    return approx_gates
+
 
 
 def approximate_rz(rz_gate: "gates.RZ", compress_rotations: bool = False) -> Sequence["gates.Gate"]:
     """Get the Clifford+T approximation of a an rz gate.
     Currently ony supports arguments of the form pi/2^n.
     """
+    if not hasattr(rz_gate.phase,"denominator") :
+        return approximate_rz_from_no_pi(rz_gate,compress_rotations)
 
     if not (is_power_of_two(rz_gate.phase.denominator) and rz_gate.phase.numerator == 1):
         raise Exception(f"Can only approximate pi/2^n phase gates, got rz(pi*{rz_gate.phase})")
