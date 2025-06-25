@@ -113,6 +113,8 @@ def parse_u2_instruction(instruction):
         # 处理可能的 'pi' 替换为 np.pi
         if value1 == 'pi':
             value1 = np.pi
+        elif value1 == '-pi':
+            value1 = -np.pi
         else:
             value1 = float(value1)
 
