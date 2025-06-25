@@ -84,7 +84,7 @@ class TestLSInstructionsFromGatesGenerator:
 
                     lines = infile.readlines()  # Read all lines from the file
                     #print(lines)
-                    prefixes = ('creg',r'//', 'barrier', 'measure','p')
+                    prefixes = ('creg',r'//', 'barrier', 'measure')
 
                     #pre process
                     for i in range(5,len( lines)):
@@ -110,7 +110,7 @@ class TestLSInstructionsFromGatesGenerator:
                         if len(line)>0:
                             content += line
 
-                print(content)
+                #print(content)
                 content = self.test_to_instructions(qasmstr=content)
                 # Write the processed lines to a new file in the output directory
                 output_file_path = os.path.join(output_directory, f"LSI_{filename[:-4]}lsi")

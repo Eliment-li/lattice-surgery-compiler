@@ -70,6 +70,12 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
                 ##TODO check the  theta phi and  lam
                 gates.U(type='u2',theta=np.pi/2, phi=phi, lam=lam, target_qubit=get_index_arg(args[0]))
             )
+        #support p instruction
+        elif instruction.startswith("p"):
+            theta = parse_p_instruction(instruction)
+            ret_gates.append(
+                gates.P(theta=theta, target_qubit=get_index_arg(args[0]))
+            )
 
         elif instruction[0:3] == "crz":
             if instruction[3:7] != "(pi/":
@@ -99,6 +105,20 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
 
 import re
 import numpy as np
+
+def parse_p_instruction(instruction):
+    pattern = r'p\(([^,]+)\)'
+    match = re.fullmatch(pattern, instruction)
+    assert match is not None, f"指令格式不正确: {instruction}"
+    value = match.group(1)
+    if value == 'pi':
+        value = np.pi
+    elif value =='-pi':
+        value  = -np.pi
+    else:
+        value = float(value)
+    return value
+
 def parse_u2_instruction(instruction):
 
     # 匹配括号中的内容
@@ -126,3 +146,19 @@ def parse_u2_instruction(instruction):
         return value1, value2
     else:
         raise ValueError("指令格式不正确")
+
+
+if __name__ == '__main__':
+    test_cases = [
+        "p(123)",  # 纯数字
+        "p(45.6)",  # 浮点数，前后有字符
+        "p(789)",  # 数字后跟字符
+        "p(0)",  # 0
+        "p(3.14159)",  # 浮点数
+        "p(pi)",  # 非数字
+        "p(-pi)",  # 非数字
+    ]
+
+    for cmd in test_cases:
+        result = parse_p_instruction(cmd)
+        print(f"命令: '{cmd}' -> 提取结果: {result}")

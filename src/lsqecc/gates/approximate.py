@@ -59,6 +59,13 @@ def handle_ops(ops:list,compress_rotations:bool,target_qubit:int) -> Sequence["g
             raise Exception(f"Cannot decompose gate: {o}")
     return approx_gates
 
+def approximate_p_gate(p_gate:"gates.P",compress_rotations)-> Sequence["gates.Gate"]:
+    #PhaseShift is  the P gate in qasm and qiskit, it  is equivalent to RZ up to a phase factor.
+    op = qml.PhaseShift(p_gate.theta,wires=0)
+    ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
+    approx_gates = handle_ops(ops, compress_rotations, p_gate.target_qubit)
+    return approx_gates
+
 def approximate_u_gate(u_gate:"gates.U",compress_rotations)-> Sequence["gates.Gate"]:
     op = qml.U3(u_gate.theta,u_gate.phi,u_gate.lam, wires=0)
     ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
@@ -141,3 +148,6 @@ def from_gate_string(target_qubit: int, gate_string: str):
         return gates.PauliRotations(
             target_qubit, phase=count_s_and_t_to_phase(gate_string), axis=PauliOperator.Z
         )
+
+if __name__ == '__main__':
+    approximate_p_gate()

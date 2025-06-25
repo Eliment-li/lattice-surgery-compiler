@@ -53,7 +53,13 @@ class S(Gate):
 @dataclass
 class T(Gate):
     pass
-import pennylane as qml
+
+@dataclass
+class P(Gate):
+    theta: float = 0.0
+    def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence["Gate"]:
+        return approximate.approximate_p_gate(self, compress_rotations)
+
 @dataclass
 class U(Gate):
     theta: float = 0.0
