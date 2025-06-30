@@ -4,6 +4,7 @@ Quantum gates based on the wires they are applied onto.
 
 from dataclasses import dataclass
 from fractions import Fraction
+from itertools import chain
 
 # TODO freeze the gate class
 from typing import List, Sequence
@@ -53,6 +54,16 @@ class S(Gate):
 @dataclass
 class T(Gate):
     pass
+@dataclass()
+class CCX(Gate):
+    '''
+    see https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.library.CCXGate
+    '''
+    control_qubit_0: int = 0
+    control_qubit_1: int = 1
+
+    def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence["Gate"]:
+        return approximate.decompose_ccx_gate(self, compress_rotations)
 
 @dataclass
 class RCCX(Gate):
@@ -63,7 +74,7 @@ class RCCX(Gate):
     control_qubit_1: int = 1
 
     def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence["Gate"]:
-        return approximate.approximate_rccx_gate(self, compress_rotations)
+        return approximate.decompose_rccx_gate(self, compress_rotations)
 
 @dataclass
 class P(Gate):
