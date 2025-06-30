@@ -11,7 +11,7 @@ from lsqecc.pauli_rotations.rotation import PauliOperator
 from lsqecc.utils import is_power_of_two
 import pennylane as qml
 
-def handle_ops(ops:list,compress_rotations:bool,target_qubit:int) -> Sequence["gates.Gate"]:
+def handle_sk_decompose_ops(ops:list,compress_rotations:bool,target_qubit:int) -> Sequence["gates.Gate"]:
     Tdg = 'Adjoint(T(0))'
     approx_gates = []
     for o in ops:
@@ -63,13 +63,13 @@ def approximate_p_gate(p_gate:"gates.P",compress_rotations)-> Sequence["gates.Ga
     #PhaseShift is  the P gate in qasm and qiskit, it  is equivalent to RZ up to a phase factor.
     op = qml.PhaseShift(p_gate.theta,wires=0)
     ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
-    approx_gates = handle_ops(ops, compress_rotations, p_gate.target_qubit)
+    approx_gates = handle_sk_decompose_ops(ops, compress_rotations, p_gate.target_qubit)
     return approx_gates
 
 def approximate_u_gate(u_gate:"gates.U",compress_rotations)-> Sequence["gates.Gate"]:
     op = qml.U3(u_gate.theta,u_gate.phi,u_gate.lam, wires=0)
     ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
-    approx_gates = handle_ops(ops, compress_rotations, u_gate.target_qubit)
+    approx_gates = handle_sk_decompose_ops(ops, compress_rotations, u_gate.target_qubit)
     return approx_gates
 
 # approximate the gates with  phase not in pi/2^n
@@ -80,7 +80,7 @@ def approximate_rz_from_no_pi(rz_gate: "gates.RZ",compress_rotations)-> Sequence
     op = qml.RZ(rz_gate.phase, wires=0)
     # Get the gate decomposition in ['T', 'T*', 'H']
     ops = qml.ops.sk_decomposition(op,epsilon=1e-3)
-    approx_gates = handle_ops(ops,compress_rotations,rz_gate.target_qubit)
+    approx_gates = handle_sk_decompose_ops(ops,compress_rotations,rz_gate.target_qubit)
     return approx_gates
 
 
