@@ -5,9 +5,14 @@ Helper methods to parse qasm circuits.
 from fractions import Fraction
 from typing import List, Sequence, Tuple
 
+from fontTools.ttLib.tables.ttProgram import instructions
+
 from lsqecc.gates import gates
 from lsqecc.utils import QasmParseException
 
+def test_get_index_arg():
+    str= "cx q[1] q[2]"
+    print(get_index_arg(str))
 
 def get_index_arg(qreg_arg: str) -> int:
     return int(qreg_arg.split("[")[1].split("]")[0])
@@ -70,42 +75,42 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
                 ##TODO check the  theta phi and  lam
                 gates.U(type='u2',theta=np.pi/2, phi=phi, lam=lam, target_qubit=get_index_arg(args[0]))
             )
+        #support u1 instruction
+        elif instruction.startswith("u1"):
+            theta = parse_u1_instruction(instruction)
+            ret_gates.append(
+                ##TODO check the  theta phi and  lam
+                gates.U(type='u2',theta=theta, phi=0, lam=0, target_qubit=get_index_arg(args[0]))
+            )
         #support p instruction
         elif instruction.startswith("p"):
             theta = parse_p_instruction(instruction)
             ret_gates.append(
                 gates.P(theta=theta, target_qubit=get_index_arg(args[0]))
             )
-
+        elif instruction.startswith('rccx'):
+            c0 = get_index_arg(args[0])
+            c1 = get_index_arg(args[1])
+            t2 = get_index_arg(args[2])
+            ret_gates.append(
+                gates.RCCX(control_qubit_0=c0, control_qubit_1=c1,target_qubit=t2)
+            )
         elif instruction[0:3] == "crz":
             if instruction[3:7] != "(pi/":
                 #-pi/n
-                if instruction[3:8]== "(-pi/":
-                    # -pi/n
-                    phase_pi_frac_den = int(instruction[8:].split(")")[0])
-                    ret_gates.append(
-                        gates.CRZ(
-                            control_qubit=get_index_arg(args[0]),
-                            target_qubit=get_index_arg(args[1]),
-                            phase=Fraction(-1, phase_pi_frac_den),
-                        )
-                    )
-                    continue
-                else:
-                    # float
-                    lam = re.search(r"crz\((\d+\.\d+)\)", instruction).group(1)
-                    lam = float(lam)
-                    ret_gates.append(gates.U(theta=0, phi=0, lam=lam))
+                lam = parse_phrase(instruction)
+                ret_gates.append(gates.U(theta=0, phi=0, lam=lam))
 
                 # raise QasmParseException(
                 #     f"Can only parse pi/n for n power of 2 angles as rz args in crz, " f"got {instruction}"
                 # )
-            phase_pi_frac_den = int(instruction[7:].split(")")[0])
+
+        elif instruction.startswith('ccx'):
             ret_gates.append(
-                gates.CRZ(
-                    control_qubit=get_index_arg(args[0]),
-                    target_qubit=get_index_arg(args[1]),
-                    phase=Fraction(1, phase_pi_frac_den),
+                gates.CCX(
+                    control_qubit_0=get_index_arg(args[0]),
+                    control_qubit_1=get_index_arg(args[1]),
+                    target_qubit=get_index_arg(args[2]),
                 )
             )
         elif instruction.startswith('cx'):
@@ -117,12 +122,65 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
         elif not instruction and not args:
             pass
         else:
+            print(instruction, args)
             raise QasmParseException(f"Instruction {instruction} with args {args} not implemented")
 
     return ret_gates
 
 import re
 import numpy as np
+
+def test_parse_phrase():
+    test_cases = [
+        "str1(pi)",
+        "str1(-pi)",
+        "str1(pi/2)",
+        "str1(pi/3)",
+        "str1(5)",
+        "str1(-3.14)"
+    ]
+    for test in test_cases:
+            result = parse_phrase(test)
+            print(result)
+
+def parse_phrase(instruction):
+    # 使用正则表达式匹配括号内的内容
+    match = re.search(r'\((.*?)\)', instruction)
+    if not match:
+        raise ValueError("输入字符串中没有找到括号")
+
+    expr = match.group(1)
+
+    # 处理pi的情况
+    if expr == 'pi':
+        return np.pi
+    elif expr == '-pi':
+        return -np.pi
+
+    # 处理pi/n的情况
+    if 'pi/' in expr:
+        parts = expr.split('/')
+        if len(parts) != 2:
+            raise ValueError(f"invalid instruction: {expr}")
+        if parts[0] not in ['pi', '-pi']:
+            raise ValueError(f"invalid instruction:: {expr}")
+
+        denominator = parts[1].strip()
+        try:
+            n = float(denominator)
+        except ValueError:
+            raise ValueError(f"invalid denominator: {denominator}")
+        # 计算值
+        if parts[0] == 'pi':
+            return np.pi / n
+        else:  # -pi
+            return -np.pi / n
+
+    # pure number
+    try:
+        return float(expr)
+    except ValueError:
+        raise ValueError(f"invalid expr: {expr}")
 
 def parse_p_instruction(instruction):
     pattern = r'p\(([^,]+)\)'
@@ -137,8 +195,21 @@ def parse_p_instruction(instruction):
         value = float(value)
     return value
 
-def parse_u2_instruction(instruction):
 
+def parse_u1_instruction(instruction):
+    pattern = r'u1\(([^)]+)\)'
+    match = re.search(pattern, instruction)
+    if match:
+        value = match.group(1).strip()
+        if value == 'pi':
+            value = np.pi
+        elif value == '-pi':
+            value = -np.pi
+        else:
+            value = float(value)
+        return value
+
+def parse_u2_instruction(instruction):
     # 匹配括号中的内容
     pattern = r'u2\(([^,]+),([^,]+)\)'
     match = re.search(pattern, instruction)
