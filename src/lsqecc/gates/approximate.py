@@ -10,6 +10,7 @@ from lsqecc.gates.pi_over_2_to_the_n_rz_gate_approximations import (
 from lsqecc.pauli_rotations.rotation import PauliOperator
 from lsqecc.utils import is_power_of_two
 import pennylane as qml
+import numpy as np
 
 def handle_sk_decompose_ops(ops:list,compress_rotations:bool,target_qubit:int) -> Sequence["gates.Gate"]:
     Tdg = 'Adjoint(T(0))'
@@ -63,6 +64,7 @@ def approximate_p_gate(p_gate:"gates.P",compress_rotations)-> Sequence["gates.Ga
     #PhaseShift is  the P gate in qasm and qiskit, it  is equivalent to RZ up to a phase factor.
     op = qml.PhaseShift(p_gate.theta,wires=0)
     ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
+
     approx_gates = handle_sk_decompose_ops(ops, compress_rotations, p_gate.target_qubit)
     return approx_gates
 
@@ -72,8 +74,49 @@ def approximate_u_gate(u_gate:"gates.U",compress_rotations)-> Sequence["gates.Ga
     approx_gates = handle_sk_decompose_ops(ops, compress_rotations, u_gate.target_qubit)
     return approx_gates
 
-# approximate the gates with  phase not in pi/2^n
-def approximate_rz_from_no_pi(rz_gate: "gates.RZ",compress_rotations)-> Sequence["gates.Gate"]:
+def approximate_rccx_gate(u_gate:"gates.RCCX",compress_rotations=False)-> Sequence["gates.Gate"]:
+    '''
+    The Margolus gate can be decomposed using 3 CNOT gates
+    Ry(pi/4) q[2]
+    CNOT q[1],q[2]
+    Ry(pi/4) q[2]
+    CNOT q[0],q[2]
+    Ry(-pi/4) q[2]
+    CNOT q[1],q[2]
+    Ry(-pi/4) q[2]
+    '''
+    approx_gates= []
+
+    #Ry(-pi/4) q[2] ry=hrzh
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    rz_gate=gates.RZ(target_qubit=u_gate.target_qubit, phase=np.pi/4)
+    approx_gates+=(approximate_rz_from_no_pi(rz_gate))
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    #CNOT q[1],q[2]
+    approx_gates.append(gates.CNOT(control_qubit=u_gate.control_qubit_1, target_qubit=u_gate.target_qubit))
+    #Ry(-pi/4) q[2] ry=hrzh
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    rz_gate = gates.RZ(target_qubit=u_gate.target_qubit, phase=np.pi/4)
+    approx_gates += (approximate_rz_from_no_pi(rz_gate))
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    #CNOT q[0],q[2]
+    approx_gates.append(gates.CNOT(control_qubit=u_gate.control_qubit_0, target_qubit=u_gate.target_qubit))
+    #Ry(-pi/4) q[2]
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    rz_gate = gates.RZ(target_qubit=u_gate.target_qubit, phase=-np.pi/4)
+    approx_gates += (approximate_rz_from_no_pi(rz_gate))
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    # CNOT q[1],q[2]
+    approx_gates.append(gates.CNOT(control_qubit=u_gate.control_qubit_1, target_qubit=u_gate.target_qubit))
+    # Ry(-pi/4) q[2]
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    rz_gate = gates.RZ(target_qubit=u_gate.target_qubit, phase=-np.pi/4)
+    approx_gates += (approximate_rz_from_no_pi(rz_gate))
+    approx_gates.append(gates.H(u_gate.target_qubit))
+    return  approx_gates
+
+# approximate the gates with  phase not in pi/2^n,
+def approximate_rz_from_no_pi(rz_gate: "gates.RZ",compress_rotations=False)-> Sequence["gates.Gate"]:
 
 
     #op = qml.RY(np.pi / 3, wires=0)
@@ -150,4 +193,6 @@ def from_gate_string(target_qubit: int, gate_string: str):
         )
 
 if __name__ == '__main__':
-    approximate_p_gate()
+    gate = gates.RCCX(control_qubit_0=0, control_qubit_1=1, target_qubit=2)
+    ret = approximate_rccx_gate(gate,compress_rotations=False)
+    print(ret)

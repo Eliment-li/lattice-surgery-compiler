@@ -55,6 +55,17 @@ class T(Gate):
     pass
 
 @dataclass
+class RCCX(Gate):
+    '''
+    see https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.library.RCCXGate
+    '''
+    control_qubit_0: int = 0
+    control_qubit_1: int = 1
+
+    def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence["Gate"]:
+        return approximate.approximate_rccx_gate(self, compress_rotations)
+
+@dataclass
 class P(Gate):
     theta: float = 0.0
     def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence["Gate"]:
