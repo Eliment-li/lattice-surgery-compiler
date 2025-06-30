@@ -79,9 +79,27 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
 
         elif instruction[0:3] == "crz":
             if instruction[3:7] != "(pi/":
-                raise QasmParseException(
-                    f"Can only parse pi/n for n power of 2 angles as rz args in crz, " f"got {instruction}"
-                )
+                #-pi/n
+                if instruction[3:8]== "(-pi/":
+                    # -pi/n
+                    phase_pi_frac_den = int(instruction[8:].split(")")[0])
+                    ret_gates.append(
+                        gates.CRZ(
+                            control_qubit=get_index_arg(args[0]),
+                            target_qubit=get_index_arg(args[1]),
+                            phase=Fraction(-1, phase_pi_frac_den),
+                        )
+                    )
+                    continue
+                else:
+                    # float
+                    lam = re.search(r"crz\((\d+\.\d+)\)", instruction).group(1)
+                    lam = float(lam)
+                    ret_gates.append(gates.U(theta=0, phi=0, lam=lam))
+
+                # raise QasmParseException(
+                #     f"Can only parse pi/n for n power of 2 angles as rz args in crz, " f"got {instruction}"
+                # )
             phase_pi_frac_den = int(instruction[7:].split(")")[0])
             ret_gates.append(
                 gates.CRZ(
@@ -148,6 +166,10 @@ def parse_u2_instruction(instruction):
         return value1, value2
     else:
         raise ValueError("指令格式不正确")
+
+
+
+
 
 
 if __name__ == '__main__':
