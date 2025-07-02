@@ -73,11 +73,63 @@ class TestLSInstructionsFromGatesGenerator:
         print('instructions=\n',instructions)
         return instructions
 
+
+    def merge_qreg_file(self,file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            input_code = file.read()
+
+        qreg_pattern = r"qreg\s+(\w+)\[(\d+)\];"
+        qreg_matches = re.findall(qreg_pattern, input_code,re.MULTILINE)
+
+        if len(qreg_matches) <= 1:
+            print("only got one qreg no need to merge。")
+            return
+
+        # remapping qreg
+        total_qubits = 0
+        qreg_mapping = {}
+
+        for name, size in qreg_matches:
+            size = int(size)
+            qreg_mapping[name] = (total_qubits, total_qubits + size)  # 起始和结束索引
+            total_qubits += size
+
+        def replace_indices(match):
+            var_name = match.group(1)
+            index = int(match.group(2))
+            if var_name in qreg_mapping:
+                start_idx = qreg_mapping[var_name][0]
+                return f"q[{start_idx + index}]"
+            return match.group(0)  # 保持原样
+
+        command_pattern = r"(\w+)\[(\d+)\]"
+        updated_code = re.sub(command_pattern, replace_indices, input_code)
+
+        # replace qreg
+        def replace_qreg_definitions(match):
+            # 只生成一个新的 qreg 定义
+            if replace_qreg_definitions.first_replacement:
+                replace_qreg_definitions.first_replacement = False
+                return f"qreg q[{total_qubits}];"
+            return None  # 删除其余的 qreg 定义
+
+        replace_qreg_definitions.first_replacement = True
+        updated_code = re.sub(qreg_pattern, replace_qreg_definitions, updated_code,flags=re.MULTILINE)
+
+        # 删除多余的空行
+        updated_code = re.sub(r"\n\s*\n", "\n", updated_code)
+
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(updated_code)
+
     def test_convert_all_file(self):
         input_directory = 'd:/sync/mqtbench/ori'
         output_directory = 'd:/sync/mqtbench/ls_inst'
+
+
         for filename in os.listdir(input_directory):
             input_file_path = os.path.join(input_directory, filename)
+            self.merge_qreg_file(input_file_path)
             content = ''
             if os.path.isfile(input_file_path):
                 with open(input_file_path, 'r') as infile:
