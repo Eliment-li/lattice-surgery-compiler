@@ -4,9 +4,6 @@ Helper methods to parse qasm circuits.
 
 from fractions import Fraction
 from typing import List, Sequence, Tuple
-
-from fontTools.ttLib.tables.ttProgram import instructions
-
 from lsqecc.gates import gates
 from lsqecc.utils import QasmParseException
 
