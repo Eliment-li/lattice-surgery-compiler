@@ -158,7 +158,7 @@ class TestLSInstructionsFromGatesGenerator:
                             match1 = re.match(r'ry\(([^)]+)\) q\[(\d+)\];', line)
                             phase = match1.group(1)
                             q = match1.group(2)
-                            line = f'h q[{q}];\nrz({phase}) q[{q}];\nh q[{q}];'
+                            line = f'h q[{q}];\nrz({phase}) q[{q}];\nh q[{q}];\n'
                         if len(line)>0:
                             content += line
 

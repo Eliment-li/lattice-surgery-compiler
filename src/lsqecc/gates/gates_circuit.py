@@ -13,13 +13,19 @@ class GatesCircuit:
     gates: Sequence["gates.Gate"] = field(default_factory=lambda: [])  # noqa: F811
 
     def to_clifford_plus_t(self, compress_rotations: bool = False) -> "GatesCircuit":
-        return GatesCircuit(
-            list(
-                itertools.chain.from_iterable(
-                    [gate.to_clifford_plus_t(compress_rotations) for gate in self.gates]
-                )
-            )
-        )
+        #hard to read
+        # return GatesCircuit(
+        #     list(
+        #         itertools.chain.from_iterable(
+        #             [gate.to_clifford_plus_t(compress_rotations) for gate in self.gates]
+        #         )
+        #     )
+        # )
+        new_gates = []
+        for gate in self.gates:
+            new_gates.extend(gate.to_clifford_plus_t(compress_rotations))
+        return GatesCircuit(new_gates)
+
 
     @staticmethod
     def from_qasm(qasm: str) -> "GatesCircuit":
