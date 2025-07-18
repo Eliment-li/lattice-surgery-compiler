@@ -57,7 +57,7 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
             if instruction[2:6] != "(pi/":
                 ##TODO check the  theta phi and  lam
                 lam = parse_phrase(instruction)
-                ret_gates.append(gates.U(theta = 0, phi=0,lam=lam))
+                ret_gates.append(gates.U(theta = 0, phi=0,lam=lam,target_qubit=get_index_arg(args[0])))
                 # raise QasmParseException(
                 #     f"Can only parse pi/n for n power of 2 angles as rz args, " f"got {instruction}"
                 # )
