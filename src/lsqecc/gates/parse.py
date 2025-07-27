@@ -109,6 +109,9 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
                     target_qubit=get_index_arg(args[2]),
                 )
             )
+        elif instruction.startswith('rx'):
+            theta =  parse_phrase(instruction)
+            ret_gates.append(gates.U(theta =theta,phi=-np.pi/2, lam=np.pi/2, target_qubit=get_index_arg(args[0]), type='rx'))
         elif instruction.startswith('cx'):
             if len(args) != 2:
                 raise QasmParseException(f"CNOT instruction requires exactly 2 args, got {len(args)}")
@@ -133,7 +136,7 @@ def test_parse_phrase():
         "str1(pi/2)",
         "str1(pi/3)",
         "str1(5)",
-        "str1(-3.14)"
+        "u(-3.14)"
     ]
     for test in test_cases:
             result = parse_phrase(test)
