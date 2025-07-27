@@ -64,6 +64,7 @@ class TestLSInstructionsFromGatesGenerator:
         output = LSInstructionsFromGatesGenerator.text_from_gates_circuit(circuit)
         print(output)
 
+
     def test_to_instructions(self,qasmstr=None):
         clifford_plus_t = GatesCircuit.from_qasm(qasmstr).to_clifford_plus_t()
         instructions: str = LSInstructionsFromGatesGenerator.text_from_gates_circuit(
@@ -122,6 +123,7 @@ class TestLSInstructionsFromGatesGenerator:
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(updated_code)
 
+    ## Main function ##
     def test_convert_all_file(self):
         input_directory = 'd:/sync/mqtbench/ori'
         output_directory = 'd:/sync/mqtbench/ls_inst'

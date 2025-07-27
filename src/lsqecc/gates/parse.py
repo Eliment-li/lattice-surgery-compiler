@@ -148,38 +148,34 @@ def parse_phrase(instruction):
     if not match:
         raise ValueError("输入字符串中没有找到括号")
 
-    expr = match.group(1)
+    expr = match.group(1).replace(' ', '')  # 移除空格
 
-    # 处理pi的情况
-    if expr == 'pi':
-        return np.pi
-    elif expr == '-pi':
-        return -np.pi
+    # 处理 pi 的表达式
+    pi_pattern = re.compile(r'^([+-]?[\d\.]*)\*?pi(?:/([+-]?[\d\.]+))?$')
+    m = pi_pattern.match(expr)
+    if m:
+        m_coeff = m.group(1)
+        n_denom = m.group(2)
+        # 处理 m
+        if m_coeff == '' or m_coeff == '+':
+            m_val = 1.0
+        elif m_coeff == '-':
+            m_val = -1.0
+        else:
+            m_val = float(m_coeff)
+        # 处理 n
+        if n_denom:
+            n_val = float(n_denom)
+            return m_val * np.pi / n_val
+        else:
+            return m_val * np.pi
 
-    # 处理pi/n的情况
-    if 'pi/' in expr:
-        parts = expr.split('/')
-        if len(parts) != 2:
-            raise ValueError(f"invalid instruction: {expr}")
-        if parts[0] not in ['pi', '-pi']:
-            raise ValueError(f"invalid instruction:: {expr}")
-
-        denominator = parts[1].strip()
-        try:
-            n = float(denominator)
-        except ValueError:
-            raise ValueError(f"invalid denominator: {denominator}")
-        # 计算值
-        if parts[0] == 'pi':
-            return np.pi / n
-        else:  # -pi
-            return -np.pi / n
-
-    # pure number
+    # 纯数字
     try:
         return float(expr)
     except ValueError:
         raise ValueError(f"invalid expr: {expr}")
+
 
 def parse_p_instruction(instruction):
     pattern = r'p\(([^,]+)\)'
@@ -238,21 +234,3 @@ def parse_u2_instruction(instruction):
         raise ValueError("指令格式不正确")
 
 
-
-
-
-
-if __name__ == '__main__':
-    test_cases = [
-        "p(123)",  # 纯数字
-        "p(45.6)",  # 浮点数，前后有字符
-        "p(789)",  # 数字后跟字符
-        "p(0)",  # 0
-        "p(3.14159)",  # 浮点数
-        "p(pi)",  # 非数字
-        "p(-pi)",  # 非数字
-    ]
-
-    for cmd in test_cases:
-        result = parse_p_instruction(cmd)
-        print(f"命令: '{cmd}' -> 提取结果: {result}")
