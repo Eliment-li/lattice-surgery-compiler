@@ -118,6 +118,12 @@ def parse_gates_circuit(qasm: str) -> Sequence[gates.Gate]:
             ret_gates.append(
                 gates.CNOT(control_qubit=get_index_arg(args[0]), target_qubit=get_index_arg(args[1]))
             )
+        elif instruction.startswith('cz'):
+            if len(args) != 2:
+                raise QasmParseException(f"CZ instruction requires exactly 2 args, got {len(args)}")
+            ret_gates.append(
+                gates.CZ(control_qubit=get_index_arg(args[0]), target_qubit=get_index_arg(args[1]))
+            )
         elif not instruction and not args:
             pass
         else:

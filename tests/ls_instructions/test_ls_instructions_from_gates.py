@@ -130,6 +130,7 @@ class TestLSInstructionsFromGatesGenerator:
 
 
         for filename in os.listdir(input_directory):
+            print(f"Processing file: {filename}")
             input_file_path = os.path.join(input_directory, filename)
             self.merge_qreg_file(input_file_path)
             content = ''

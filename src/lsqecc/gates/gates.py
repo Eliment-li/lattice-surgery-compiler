@@ -160,3 +160,20 @@ class CRZ(RZ):
         gates.extend(RZ(self.target_qubit, self.phase / 2).to_clifford_plus_t(compress_rotations))
         gates.append(CNOT(control_qubit=self.control_qubit, target_qubit=self.target_qubit))
         return gates
+
+@dataclass
+class CZ(Gate):
+    control_qubit: int = -1
+    target_qubit: int = -1
+
+    def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence[Gate]:
+        # Use the follwing identity:
+        # q_0: ─────■─────               ┌───┐
+        #      ┌────┴────┐    ---   q_0: ┤ H ├──■──
+        # q_1: ┤ Z       ├    ---        ┤ H ├──■──
+        #      └─────────┘          q_1: └───┘
+        gates: List[Gate] = []
+        gates.append(H(self.target_qubit))
+        gates.append(CNOT(control_qubit=self.control_qubit, target_qubit=self.target_qubit))
+        gates.append(H(self.target_qubit))
+        return gates
