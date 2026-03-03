@@ -168,10 +168,7 @@ class CZ(Gate):
 
     def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence[Gate]:
         # Use the follwing identity:
-        # q_0: ─────■─────               ┌───┐
-        #      ┌────┴────┐    ---   q_0: ┤ H ├──■──
-        # q_1: ┤ Z       ├    ---        ┤ H ├──■──
-        #      └─────────┘          q_1: └───┘
+        #CZ = (I\otimes H);CX;(I\otimes H)
         gates: List[Gate] = []
         gates.append(H(self.target_qubit))
         gates.append(CNOT(control_qubit=self.control_qubit, target_qubit=self.target_qubit))
