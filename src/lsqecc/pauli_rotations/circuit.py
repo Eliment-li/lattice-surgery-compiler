@@ -364,15 +364,27 @@ class PauliOpCircuit(object):
         )
 
         qregs = list(filter(lambda line: line[0] == "qreg", instructions))
-        if len(qregs) != 1:
+        if len(qregs) == 1:
+            qreg_name, qreg_args = qregs[0]
+            num_qubits = get_index_arg(qreg_args[0])
+        elif len(qregs) == 0:
+            qubit_decls = list(filter(lambda line: line[0].startswith("qubit["), instructions))
+            if len(qubit_decls) != 1:
+                raise QasmParseException(
+                    f"Need exactly one qubit declaration, got {len(qubit_decls)}"
+                )
+            qubit_decl, _ = qubit_decls[0]
+            num_qubits = get_index_arg(qubit_decl)
+        else:
             raise QasmParseException(f"Need exactly one qreg, got {len(qregs)}")
-        qreg_name, qreg_args = qregs[0]
-        num_qubits = get_index_arg(qreg_args[0])
 
         # For now discard TODO check that they are used correctly
         instructions = list(
             filter(
-                lambda line: line[0] not in {"OPENQASM", "include", "barrier", "qreg"}, instructions
+                lambda line: line[0] not in {"OPENQASM", "include", "barrier", "qreg","meas"}
+                and not line[0].startswith("qubit[")
+                and not line[0].startswith("bit["),
+                instructions,
             )
         )
 
