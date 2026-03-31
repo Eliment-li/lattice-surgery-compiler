@@ -5,6 +5,7 @@ from qiskit import QuantumCircuit
 from sympy.solvers.ode.lie_group import lie_heuristics
 
 from lsqecc.gates.gates_circuit import GatesCircuit
+from lsqecc.gates.openqasm_custom_gate_expander import expand_custom_gates
 from lsqecc.ls_instructions.ls_instructions_from_gates import (
     LSInstructionsFromGatesGenerator,
 )
@@ -98,8 +99,6 @@ def save_string_to_file(filename, content, mode='w', encoding='utf-8', line_endi
         print(f"内容已成功保存到文件: {filename}")
     except IOError as e:
         print(f"保存文件时出错: {e}")
-
-
 class TestLSInstructionsFromGatesGenerator:
     def test_text_from_gates_circuit(self,qasmstr=None):
         if not qasmstr:
@@ -216,9 +215,8 @@ class TestLSInstructionsFromGatesGenerator:
 
     ## Main function ##
     def test_convert_all_file(self):
-        input_directory = 'd:/sync/mqtbench/ori'
-        output_directory = 'd:/sync/mqtbench/ls_inst'
-
+        input_directory = 'd:/mqtbench/ori1'
+        output_directory = 'd:/mqtbench/ls_inst'
 
         for filename in os.listdir(input_directory):
             print(f"Processing file: {filename}")
@@ -228,15 +226,16 @@ class TestLSInstructionsFromGatesGenerator:
             if os.path.isfile(input_file_path):
                 with open(input_file_path, 'r') as infile:
 
-                    lines = infile.readlines()  # Read all lines from the file
+                    expanded_code = expand_custom_gates(infile.read())
+                    lines = expanded_code.splitlines(keepends=True)
                     #print(lines)
-                    prefixes = ('creg',r'//', 'barrier', 'measure')
+                    prefixes = ('OPENQASM', 'include', r'//', 'barrier', 'measure')
 
                     #pre process
-                    for i in range(5,len( lines)):
+                    for i in range(len(lines)):
                         line = lines[i]
                         #if line.startswith('creg') or line.startswith(r'//') or line.startswith('barrier') or line.startswith('measure'):
-                        if line.startswith(prefixes):
+                        if not line.strip() or line.startswith(prefixes):
                             continue
                         #  'cp' to 'crz'
                         line = line.strip().replace('cp', 'crz')+'\n'
