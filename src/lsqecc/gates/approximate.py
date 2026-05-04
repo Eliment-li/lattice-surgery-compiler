@@ -68,15 +68,18 @@ def handle_sk_decompose_ops(ops:list,compress_rotations:bool,target_qubit:int) -
 def approximate_p_gate(p_gate:"gates.P",compress_rotations)-> Sequence["gates.Gate"]:
     #PhaseShift is  the P gate in qasm and qiskit, it  is equivalent to RZ up to a phase factor.
     op = qml.PhaseShift(p_gate.theta,wires=0)
-    ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
+    ops = qml.ops.sk_decomposition(op, epsilon=1e-1)
     approx_gates = handle_sk_decompose_ops(ops, compress_rotations, p_gate.target_qubit)
     return approx_gates
 
 def approximate_u_gate(u_gate:"gates.U",compress_rotations)-> Sequence["gates.Gate"]:
     op = qml.U3(u_gate.theta,u_gate.phi,u_gate.lam, wires=0)
-    ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
+    ops = qml.ops.sk_decomposition(op, epsilon=1e-1)
     approx_gates = handle_sk_decompose_ops(ops, compress_rotations, u_gate.target_qubit)
     return approx_gates
+
+def approximate_cu_gate(cu_gate:"gates.CU",compress_rotations)-> Sequence["gates.Gate"]:
+    op = qml.ctrl(qml.U3(cu_gate.theta,cu_gate.phi,cu_gate.lam,wires=1), control=0)
 
 
 
@@ -128,7 +131,7 @@ def approximate_rz_from_no_pi(rz_gate: "gates.RZ",compress_rotations=False)-> Se
     #op = qml.RY(np.pi / 3, wires=0)
     op = qml.RZ(rz_gate.phase, wires=0)
     # Get the gate decomposition in ['T', 'T*', 'H']
-    ops = qml.ops.sk_decomposition(op,epsilon=1e-3)
+    ops = qml.ops.sk_decomposition(op,epsilon=1e-1)
     approx_gates = handle_sk_decompose_ops(ops,compress_rotations,rz_gate.target_qubit)
     return approx_gates
 
