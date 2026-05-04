@@ -215,7 +215,7 @@ class TestLSInstructionsFromGatesGenerator:
 
     ## Main function ##
     def test_convert_all_file(self):
-        input_directory = 'd:/mqtbench/ori1'
+        input_directory = 'd:/mqtbench/ori'
         output_directory = 'd:/mqtbench/ls_inst'
 
         for filename in os.listdir(input_directory):

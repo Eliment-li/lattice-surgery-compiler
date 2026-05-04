@@ -90,7 +90,7 @@ class U(Gate):
     #u u2 u3
     type: str = ''
 
-    def to_clifford_plus_t(self, compress_rotations: bool = False) -> Sequence["Gate"]:
+    def to_clifford_plus_t(self, compress_rotations: bool = True) -> Sequence["Gate"]:
         return approximate.approximate_u_gate(self, compress_rotations)
 
 @dataclass
